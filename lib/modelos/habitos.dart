@@ -1,13 +1,13 @@
-class Habito {
+class Habit {
   int id;
   String nom;
   int color;
-  List<String> fechasCompletadas;
+  List<String> datesCompletades;
 
-  Habito({
+  Habit({
     required this.id,
     required this.nom,
     required this.color,
-    required this.fechasCompletadas
+    required this.datesCompletades
 });
 }

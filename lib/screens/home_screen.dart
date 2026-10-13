@@ -1,5 +1,6 @@
+
 import 'package:flutter/material.dart';
-import '../models/habito.dart';
+import '../modelos/habitos.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,39 +11,49 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  List<Habito> habitos = [
-    Habito(
+  List<Habit> habits = [
+    Habit(
       id: 1,
-      nombre: 'Beber agua',
+      nom: 'Beure aigua',
       color: Colors.blue.toARGB32(),
-      fechasCompletadas: [],
+      datesCompletades: [],
     ),
-    Habito(
+
+    Habit(
       id: 2,
-      nombre: 'Hacer ejercicio',
+      nom: 'Fer exercici',
       color: Colors.orange.toARGB32(),
-      fechasCompletadas: [],
+      datesCompletades: [],
     ),
-    Habito(
+
+    Habit(
       id: 3,
-      nombre: 'Leer',
+      nom: 'Llegir',
       color: Colors.green.toARGB32(),
-      fechasCompletadas: [],
+      datesCompletades: [],
     ),
   ];
+
   @override
   Widget build(BuildContext context) {
+    // Construïm la pantalla principal de l'aplicació
+
     return Scaffold(
+      // Estructura bàsica de la pantalla
+
       appBar: AppBar(
-        title: const Text('Mis hábitos'),
+        title: const Text('Els meus hàbits'),
+        // Títol de la barra superior
       ),
 
       body: Column(
         children: [
+
           const SizedBox(height: 20),
+          // Deixem un espai vertical
 
           const Text(
-            '¡Bienvenido!',
+            'Benvingut!',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -52,27 +63,46 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
 
           Text(
-            'Tienes ${habitos.length} hábitos registrados',
+            'Tens ${habits.length} hàbits registrats',
             style: const TextStyle(fontSize: 18),
           ),
 
           const SizedBox(height: 20),
 
           Expanded(
+            // Permet que la llista ocupi l'espai disponible
+
             child: ListView.builder(
-              itemCount: habitos.length,
+              // Creem una llista dinàmica amb els hàbits
+
+              itemCount: habits.length,
+              // Indiquem quants elements tindrà la llista
+
               itemBuilder: (context, index) {
-                final habito = habitos[index];
+                // Construïm cada element de la llista
+
+                final habit = habits[index];
+                // Obtenim l'hàbit de la posició actual
 
                 return ListTile(
+                  // Mostrem la informació de cada hàbit
+
                   leading: CircleAvatar(
-                    backgroundColor: Color(habito.color),
+                    backgroundColor: Color(habit.color),
+                    // Mostrem el color de l'hàbit
                   ),
-                  title: Text(habito.nombre),
+
+                  title: Text(habit.nom),
+                  // Mostrem el nom de l'hàbit
+
                   trailing: Checkbox(
+                    // Casella per marcar l'hàbit com a completat
+
                     value: false,
+                    // De moment tots els hàbits apareixen sense completar
+
                     onChanged: (valor) {
-                      // Aquí implementaremos el cambio de estado.
+                      // Aquí implementarem el canvi d'estat de l'hàbit
                     },
                   ),
                 );
