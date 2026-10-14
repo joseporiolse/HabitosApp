@@ -35,6 +35,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Habit App',
 
+      debugShowCheckedModeBanner: false, //Amaguem el banner de debug
+
       theme: ThemeData(
 
         colorScheme: ColorScheme.fromSeed(

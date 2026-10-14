@@ -107,4 +107,12 @@ class PreferenciesService {
     }).toList();
     // Reconstruïm els objectes Habit
   }
+
+  Future<void> esborrarTotalDades() async{
+
+    final prefs = await SharedPreferences.getInstance(); //Obtenim preferencies de l'app
+
+    await prefs.clear(); //Esborrem totes les dades
+
+  }
 }

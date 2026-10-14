@@ -1,4 +1,4 @@
-
+import '../main.dart';
 import 'package:flutter/material.dart';
 import '../models/habitos.dart';
 import '../services/preferencies_service.dart';
@@ -76,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         setState(() {
           nom = nomGuardat ?? '';
+          objectiu = objectiuGuardat ?? 0;
           carregant = false;
         });
       }
@@ -342,6 +343,54 @@ class _HomeScreenState extends State<HomeScreen> {
     await preferencies.guardarHabits(habits);
   }
 
+  Future<void> reiniciarApp() async {
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Restablir App'),
+
+          content: const Text(
+            'Estas segur de que vols esborrar totes les dades? '
+                'Es perdera tot tipus de informacio'
+                'Aquesta acció no es pot desfer.'
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel·lar'),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text('Esborrar dades'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if(confirmar != true || !mounted) return;
+
+    await preferencies.esborrarTotalDades();
+
+    if(!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+          builder: (context) => const Benvinguda(),
+      ),
+        (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Construïm la pantalla principal
@@ -351,6 +400,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Els meus hàbits'),
+
+        actions: [
+          // Botó per restablir l'aplicació
+          IconButton(
+            icon: const Icon(Icons.restart_alt),
+            tooltip: 'Restablir aplicació',
+            onPressed: reiniciarApp,
+          ),
+        ],
       ),
 
       floatingActionButton: carregant
