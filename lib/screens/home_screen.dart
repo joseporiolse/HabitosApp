@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/habitos.dart';
+import '../services/preferencies_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +11,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final PreferenciesService preferencies = PreferenciesService();
+  // Servei per recuperar i guardar les dades
+
+  String nom = '';
+  // Nom de l'usuari
 
   List<Habit> habits = [
     Habit(
@@ -18,14 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.blue.toARGB32(),
       datesCompletades: [],
     ),
-
     Habit(
       id: 2,
       nom: 'Fer exercici',
       color: Colors.orange.toARGB32(),
       datesCompletades: [],
     ),
-
     Habit(
       id: 3,
       nom: 'Llegir',
@@ -35,26 +39,107 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    carregarNom();
+    carregarHabits();
+    // Carreguem el nom i els hàbits guardats
+  }
+
+  Future<void> carregarHabits() async {
+    // Recuperem els hàbits guardats a les preferències
+
+    final habitsGuardats = await preferencies.obtenirHabits();
+
+    if (!mounted) return;
+    // Comprovem que la pantalla encara estigui activa
+
+    if (habitsGuardats.isNotEmpty) {
+      setState(() {
+        habits = habitsGuardats;
+      });
+    } else {
+      await preferencies.guardarHabits(habits);
+      // Guardem els hàbits inicials si encara no hi ha dades
+    }
+  }
+
+  Future<void> carregarNom() async {
+    // Recuperem el nom guardat de l'usuari
+
+    final nomGuardat = await preferencies.obtenirNom();
+
+    if (!mounted) return;
+    // Comprovem que la pantalla encara estigui activa
+
+    setState(() {
+      nom = nomGuardat ?? '';
+    });
+  }
+
+  String obtenirDataAvui() {
+    // Obtenim la data actual sense l'hora
+
+    final avui = DateTime.now();
+
+    return '${avui.year}-${avui.month}-${avui.day}';
+  }
+
+  bool estaCompletatAvui(Habit habit) {
+    // Comprovem si l'hàbit està completat avui
+
+    return habit.datesCompletades.contains(obtenirDataAvui());
+  }
+
+  int calcularHabitsCompletats() {
+    // Comptem els hàbits completats avui
+
+    return habits.where((habit) {
+      return estaCompletatAvui(habit);
+    }).length;
+  }
+
+  Future<void> canviarEstatHabit(Habit habit, bool completat) async {
+    // Marquem o desmarquem un hàbit del dia actual
+
+    final dataAvui = obtenirDataAvui();
+
+    setState(() {
+      if (completat) {
+        // Si l'hàbit està completat, guardem la data d'avui
+
+        if (!habit.datesCompletades.contains(dataAvui)) {
+          habit.datesCompletades.add(dataAvui);
+        }
+      } else {
+        // Si desmarquem l'hàbit, eliminem la data d'avui
+
+        habit.datesCompletades.remove(dataAvui);
+      }
+    });
+
+    await preferencies.guardarHabits(habits);
+    // Guardem els canvis a les preferències
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Construïm la pantalla principal de l'aplicació
 
-    return Scaffold(
-      // Estructura bàsica de la pantalla
+    final habitsCompletats = calcularHabitsCompletats();
 
+    return Scaffold(
       appBar: AppBar(
         title: const Text('Els meus hàbits'),
-        // Títol de la barra superior
       ),
 
       body: Column(
         children: [
-
           const SizedBox(height: 20),
-          // Deixem un espai vertical
 
-          const Text(
-            'Benvingut!',
-            style: TextStyle(
+          Text(
+            'Benvingut, $nom!',
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
             ),
@@ -63,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
 
           Text(
-            'Tens ${habits.length} hàbits registrats',
+            '$habitsCompletats de ${habits.length} hàbits completats',
             style: const TextStyle(fontSize: 18),
           ),
 
@@ -76,33 +161,26 @@ class _HomeScreenState extends State<HomeScreen> {
               // Creem una llista dinàmica amb els hàbits
 
               itemCount: habits.length,
-              // Indiquem quants elements tindrà la llista
 
               itemBuilder: (context, index) {
                 // Construïm cada element de la llista
 
                 final habit = habits[index];
-                // Obtenim l'hàbit de la posició actual
 
                 return ListTile(
-                  // Mostrem la informació de cada hàbit
-
                   leading: CircleAvatar(
                     backgroundColor: Color(habit.color),
-                    // Mostrem el color de l'hàbit
                   ),
 
                   title: Text(habit.nom),
-                  // Mostrem el nom de l'hàbit
 
                   trailing: Checkbox(
-                    // Casella per marcar l'hàbit com a completat
-
-                    value: false,
-                    // De moment tots els hàbits apareixen sense completar
+                    value: estaCompletatAvui(habit),
 
                     onChanged: (valor) {
-                      // Aquí implementarem el canvi d'estat de l'hàbit
+                      if (valor != null) {
+                        canviarEstatHabit(habit, valor);
+                      }
                     },
                   ),
                 );
