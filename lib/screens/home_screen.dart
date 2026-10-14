@@ -138,12 +138,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return idMaxim + 1;
   }
 
-  Future<void> mostrarFormulariHabit() async {
-    // Mostrem el formulari per crear un hàbit
+  Future<void> mostrarFormulariHabit({Habit? habitEditar}) async {
+    // Mostrem el formulari per crear o editar un hàbit
 
-    final controladorNom = TextEditingController();
+    final controladorNom = TextEditingController(
+      text: habitEditar?.nom ?? '',
+    );
 
-    Color colorSeleccionat = Colors.blue;
+    Color colorSeleccionat = habitEditar != null
+        ? Color(habitEditar.color)
+        : Colors.blue;
 
     final colorsDisponibles = [
       Colors.blue,
@@ -157,7 +161,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Afegir hàbit'),
+          title: Text(
+            habitEditar == null ? 'Afegir hàbit' : 'Editar hàbit',
+          ),
 
           content: StatefulBuilder(
             builder: (context, actualitzarDialog) {
@@ -226,20 +232,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   return;
                 }
 
-                // Creem un nou hàbit amb un identificador únic
-                final nouHabit = Habit(
-                  id: obtenirSeguentId(),
-                  nom: nomHabit,
-                  color: colorSeleccionat.toARGB32(),
-                  datesCompletades: [],
-                );
-
-                // Afegim el nou hàbit a la llista
                 if (!mounted) return;
 
-                setState(() {
-                  habits.add(nouHabit);
-                });
+                if (habitEditar == null) {
+                  // Creem un nou hàbit amb un identificador únic
+
+                  final nouHabit = Habit(
+                    id: obtenirSeguentId(),
+                    nom: nomHabit,
+                    color: colorSeleccionat.toARGB32(),
+                    datesCompletades: [],
+                  );
+
+                  setState(() {
+                    habits.add(nouHabit);
+                  });
+                } else {
+                  // Editem el nom i el color de l'hàbit existent
+                  // Conservem l'identificador i les dates completades
+
+                  setState(() {
+                    habitEditar.nom = nomHabit;
+                    habitEditar.color = colorSeleccionat.toARGB32();
+                  });
+                }
 
                 // Guardem la llista actualitzada
                 await preferencies.guardarHabits(habits);
@@ -319,14 +335,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   title: Text(habit.nom),
 
-                  trailing: Checkbox(
-                    value: estaCompletatAvui(habit),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: 'Editar hàbit',
+                        onPressed: () {
+                          mostrarFormulariHabit(habitEditar: habit);
+                        },
+                      ),
 
-                    onChanged: (valor) {
-                      if (valor != null) {
-                        canviarEstatHabit(habit, valor);
-                      }
-                    },
+                      Checkbox(
+                        value: estaCompletatAvui(habit),
+                        onChanged: (valor) {
+                          if (valor != null) {
+                            canviarEstatHabit(habit, valor);
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
