@@ -41,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     carregarNom();
     carregarHabits();
     // Carreguem el nom i els hàbits guardats
@@ -52,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final habitsGuardats = await preferencies.obtenirHabits();
 
     if (!mounted) return;
-    // Comprovem que la pantalla encara estigui activa
 
     if (habitsGuardats.isNotEmpty) {
       setState(() {
@@ -70,7 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final nomGuardat = await preferencies.obtenirNom();
 
     if (!mounted) return;
-    // Comprovem que la pantalla encara estigui activa
 
     setState(() {
       nom = nomGuardat ?? '';
@@ -99,27 +98,165 @@ class _HomeScreenState extends State<HomeScreen> {
     }).length;
   }
 
-  Future<void> canviarEstatHabit(Habit habit, bool completat) async {
+  Future<void> canviarEstatHabit(
+      Habit habit,
+      bool completat,
+      ) async {
     // Marquem o desmarquem un hàbit del dia actual
 
     final dataAvui = obtenirDataAvui();
 
     setState(() {
       if (completat) {
-        // Si l'hàbit està completat, guardem la data d'avui
-
         if (!habit.datesCompletades.contains(dataAvui)) {
           habit.datesCompletades.add(dataAvui);
         }
       } else {
-        // Si desmarquem l'hàbit, eliminem la data d'avui
-
         habit.datesCompletades.remove(dataAvui);
       }
     });
 
     await preferencies.guardarHabits(habits);
     // Guardem els canvis a les preferències
+  }
+
+  int obtenirSeguentId() {
+    // Busquem un identificador que no estigui repetit
+
+    if (habits.isEmpty) {
+      return 1;
+    }
+
+    int idMaxim = 0;
+
+    for (final habit in habits) {
+      if (habit.id > idMaxim) {
+        idMaxim = habit.id;
+      }
+    }
+
+    return idMaxim + 1;
+  }
+
+  Future<void> mostrarFormulariHabit() async {
+    // Mostrem el formulari per crear un hàbit
+
+    final controladorNom = TextEditingController();
+
+    Color colorSeleccionat = Colors.blue;
+
+    final colorsDisponibles = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+    ];
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Afegir hàbit'),
+
+          content: StatefulBuilder(
+            builder: (context, actualitzarDialog) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: controladorNom,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom de l\'hàbit',
+                      hintText: 'Exemple: Caminar',
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text('Selecciona un color:'),
+
+                  const SizedBox(height: 10),
+
+                  Wrap(
+                    spacing: 10,
+                    children: colorsDisponibles.map((color) {
+                      final seleccionat = colorSeleccionat == color;
+
+                      return InkWell(
+                        onTap: () {
+                          actualitzarDialog(() {
+                            colorSeleccionat = color;
+                          });
+                        },
+                        child: CircleAvatar(
+                          backgroundColor: color,
+                          radius: 20,
+                          child: seleccionat
+                              ? const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                          )
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel·lar'),
+            ),
+
+            ElevatedButton(
+              onPressed: () async {
+                // Recuperem el nom introduït
+                final nomHabit = controladorNom.text.trim();
+
+                // Comprovem que el nom no estigui buit
+                if (nomHabit.isEmpty) {
+                  return;
+                }
+
+                // Creem un nou hàbit amb un identificador únic
+                final nouHabit = Habit(
+                  id: obtenirSeguentId(),
+                  nom: nomHabit,
+                  color: colorSeleccionat.toARGB32(),
+                  datesCompletades: [],
+                );
+
+                // Afegim el nou hàbit a la llista
+                if (!mounted) return;
+
+                setState(() {
+                  habits.add(nouHabit);
+                });
+
+                // Guardem la llista actualitzada
+                await preferencies.guardarHabits(habits);
+
+                // Tanquem el formulari
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controladorNom.dispose();
   }
 
   @override
@@ -131,6 +268,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Els meus hàbits'),
+      ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          mostrarFormulariHabit();
+        },
+        tooltip: 'Afegir hàbit',
+        child: const Icon(Icons.add),
       ),
 
       body: Column(
