@@ -12,11 +12,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PreferenciesService preferencies = PreferenciesService();
-  // Servei per recuperar i guardar les dades
 
   String nom = '';
-  // Nom de l'usuari
+  int objectiu = 0; //Objectiu establert per l'usuari
+  bool carregant = true;
 
+  // Hàbits inicials de l'aplicació
   List<Habit> habits = [
     Habit(
       id: 1,
@@ -41,39 +42,56 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    carregarDades();
+  }
 
-    carregarNom();
-    carregarHabits();
+  Future<void> carregarDades() async {
     // Carreguem el nom i els hàbits guardats
-  }
 
-  Future<void> carregarHabits() async {
-    // Recuperem els hàbits guardats a les preferències
+    try {
+      final nomGuardat = await preferencies.obtenirNom(); //Recuperem nom guardat
 
-    final habitsGuardats = await preferencies.obtenirHabits();
+      final objectiuGuardat = await preferencies.obtenirObjectiu();
 
-    if (!mounted) return;
+      final existeixen =
+      await preferencies.existeixenHabitsGuardats();
 
-    if (habitsGuardats.isNotEmpty) {
+      if (existeixen) {
+        // Recuperem els hàbits, encara que la llista sigui buida
+        final habitsGuardats = await preferencies.obtenirHabits();
+
+        if (!mounted) return;
+
+        setState(() {
+          nom = nomGuardat ?? '';
+          objectiu = objectiuGuardat ?? 0;
+          habits = habitsGuardats;
+          carregant = false;
+        });
+      } else {
+        // Guardem els hàbits inicials només la primera vegada
+        await preferencies.guardarHabits(habits);
+
+        if (!mounted) return;
+
+        setState(() {
+          nom = nomGuardat ?? '';
+          carregant = false;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+
       setState(() {
-        habits = habitsGuardats;
+        carregant = false;
       });
-    } else {
-      await preferencies.guardarHabits(habits);
-      // Guardem els hàbits inicials si encara no hi ha dades
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error en carregar les dades'),
+        ),
+      );
     }
-  }
-
-  Future<void> carregarNom() async {
-    // Recuperem el nom guardat de l'usuari
-
-    final nomGuardat = await preferencies.obtenirNom();
-
-    if (!mounted) return;
-
-    setState(() {
-      nom = nomGuardat ?? '';
-    });
   }
 
   String obtenirDataAvui() {
@@ -116,8 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
+    // Guardem els canvis
     await preferencies.guardarHabits(habits);
-    // Guardem els canvis a les preferències
   }
 
   int obtenirSeguentId() {
@@ -139,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> mostrarFormulariHabit({Habit? habitEditar}) async {
-    // Mostrem el formulari per crear o editar un hàbit
+    // Formulari per crear o editar un hàbit
 
     final controladorNom = TextEditingController(
       text: habitEditar?.nom ?? '',
@@ -162,7 +180,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            habitEditar == null ? 'Afegir hàbit' : 'Editar hàbit',
+            habitEditar == null
+                ? 'Afegir hàbit'
+                : 'Editar hàbit',
           ),
 
           content: StatefulBuilder(
@@ -187,8 +207,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   Wrap(
                     spacing: 10,
+                    runSpacing: 10,
                     children: colorsDisponibles.map((color) {
-                      final seleccionat = colorSeleccionat == color;
+                      final seleccionat =
+                          colorSeleccionat.toARGB32() ==
+                              color.toARGB32();
 
                       return InkWell(
                         onTap: () {
@@ -227,7 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Recuperem el nom introduït
                 final nomHabit = controladorNom.text.trim();
 
-                // Comprovem que el nom no estigui buit
                 if (nomHabit.isEmpty) {
                   return;
                 }
@@ -235,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (!mounted) return;
 
                 if (habitEditar == null) {
-                  // Creem un nou hàbit amb un identificador únic
+                  // Creem un nou hàbit
 
                   final nouHabit = Habit(
                     id: obtenirSeguentId(),
@@ -248,16 +270,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     habits.add(nouHabit);
                   });
                 } else {
-                  // Editem el nom i el color de l'hàbit existent
-                  // Conservem l'identificador i les dates completades
+                  // Editem l'hàbit existent
+                  // Conservem l'identificador i les dates
 
                   setState(() {
                     habitEditar.nom = nomHabit;
-                    habitEditar.color = colorSeleccionat.toARGB32();
+                    habitEditar.color =
+                        colorSeleccionat.toARGB32();
                   });
                 }
 
-                // Guardem la llista actualitzada
+                // Guardem els hàbits actualitzats
                 await preferencies.guardarHabits(habits);
 
                 // Tanquem el formulari
@@ -275,9 +298,53 @@ class _HomeScreenState extends State<HomeScreen> {
     controladorNom.dispose();
   }
 
+  Future<void> eliminarHabit(Habit habit) async {
+    // Demanem confirmació abans d'eliminar un hàbit
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar hàbit'),
+
+          content: Text(
+            'Estàs segur que vols eliminar "${habit.nom}"?',
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel·lar'),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Si l'usuari cancel·la, no eliminem res
+    if (confirmar != true || !mounted) return;
+
+    // Eliminem l'hàbit de la llista
+    setState(() {
+      habits.removeWhere((element) => element.id == habit.id);
+    });
+
+    // Guardem la llista actualitzada
+    await preferencies.guardarHabits(habits);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Construïm la pantalla principal de l'aplicació
+    // Construïm la pantalla principal
 
     final habitsCompletats = calcularHabitsCompletats();
 
@@ -286,7 +353,9 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Els meus hàbits'),
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: carregant
+          ? null
+          : FloatingActionButton(
         onPressed: () {
           mostrarFormulariHabit();
         },
@@ -294,7 +363,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add),
       ),
 
-      body: Column(
+      body: carregant
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : Column(
         children: [
           const SizedBox(height: 20),
 
@@ -309,23 +382,17 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
 
           Text(
-            '$habitsCompletats de ${habits.length} hàbits completats',
+            '$habitsCompletats de $objectiu hàbits completats',
             style: const TextStyle(fontSize: 18),
           ),
 
           const SizedBox(height: 20),
 
           Expanded(
-            // Permet que la llista ocupi l'espai disponible
-
             child: ListView.builder(
-              // Creem una llista dinàmica amb els hàbits
-
               itemCount: habits.length,
 
               itemBuilder: (context, index) {
-                // Construïm cada element de la llista
-
                 final habit = habits[index];
 
                 return ListTile(
@@ -338,14 +405,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Botó per editar l'hàbit
                       IconButton(
                         icon: const Icon(Icons.edit),
                         tooltip: 'Editar hàbit',
                         onPressed: () {
-                          mostrarFormulariHabit(habitEditar: habit);
+                          mostrarFormulariHabit(
+                            habitEditar: habit,
+                          );
                         },
                       ),
 
+                      // Botó per eliminar l'hàbit
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        tooltip: 'Eliminar hàbit',
+                        onPressed: () {
+                          eliminarHabit(habit);
+                        },
+                      ),
+
+                      // Casella per marcar l'hàbit
                       Checkbox(
                         value: estaCompletatAvui(habit),
                         onChanged: (valor) {

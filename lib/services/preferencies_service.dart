@@ -75,6 +75,16 @@ class PreferenciesService {
     // Guardem els hàbits a les preferències
   }
 
+  Future<bool> existeixenHabitsGuardats() async {
+    // Comprovem si ja existeix una llista d'hàbits guardada
+
+    final prefs = await SharedPreferences.getInstance();
+    // Obtenim les preferències de l'aplicació
+
+    return prefs.containsKey(clauHabits);
+    // Retornem si existeix la clau dels hàbits
+  }
+
   Future<List<Habit>> obtenirHabits() async {
     // Funció que recupera la llista d'hàbits guardats
 
@@ -85,8 +95,8 @@ class PreferenciesService {
     // Recuperem el text JSON guardat
 
     if (textJson == null) {
-      return [];
       // Si no hi ha hàbits guardats, retornem una llista buida
+      return [];
     }
 
     final llistaJson = jsonDecode(textJson) as List<dynamic>;
