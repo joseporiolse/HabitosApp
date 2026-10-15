@@ -5,7 +5,7 @@ import '../services/preferencies_service.dart';
 import 'estadistiques_screen.dart';
 import 'configuracio_screen.dart';
 import 'editar_habit_screen.dart';
-import '../widgets/Targeta_habit.dart';
+import '../widgets/targeta_habit.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool temaFosc;
