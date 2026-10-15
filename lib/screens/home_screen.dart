@@ -1,9 +1,10 @@
-import '../main.dart';
+import 'benvinguda_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/habitos.dart';
 import '../services/preferencies_service.dart';
 import 'estadistiques_screen.dart';
 import 'configuracio_screen.dart';
+import 'editar_habit_screen.dart';
 import '../widgets/Targeta_habit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,6 +12,8 @@ class HomeScreen extends StatefulWidget {
   final double midaLletra;
   final bool ocultarCompletats;
   final Future<void> Function(bool, double, bool)? guardarAjustos;
+  final String? nomInicial;
+  final int? objectiuInicial;
 
   const HomeScreen({
     super.key,
@@ -18,6 +21,8 @@ class HomeScreen extends StatefulWidget {
     this.midaLletra = 1.0,
     this.ocultarCompletats = false,
     this.guardarAjustos,
+    this.nomInicial,
+    this.objectiuInicial,
   });
 
   @override
@@ -62,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
+
   Future<void> carregarDades() async {
     // Carreguem el nom, l'objectiu i els hàbits guardats
 
@@ -71,6 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final objectiuGuardat =
       await preferencies.obtenirObjectiu();
+
+      // Utilitzem les dades de Benvinguda si s'han rebut
+      final nomUsuari = widget.nomInicial ?? nomGuardat ?? '';
+      final objectiuUsuari =
+          widget.objectiuInicial ?? objectiuGuardat ?? 0;
 
       // Recuperem si volem ocultar els hàbits completats
       final ocultarGuardat =
@@ -87,8 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
 
         setState(() {
-          nom = nomGuardat ?? '';
-          objectiu = objectiuGuardat ?? 0;
+          nom = nomUsuari;
+          objectiu = objectiuUsuari;
           habits = habitsGuardats;
           ocultarCompletats = ocultarGuardat;
           carregant = false;
@@ -100,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
 
         setState(() {
-          nom = nomGuardat ?? '';
-          objectiu = objectiuGuardat ?? 0;
+          nom = nomUsuari;
+          objectiu = objectiuUsuari;
           ocultarCompletats = ocultarGuardat;
           carregant = false;
         });
@@ -185,145 +196,40 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> mostrarFormulariHabit({Habit? habitEditar}) async {
-    // Formulari per crear o editar un hàbit
-
-    final controladorNom = TextEditingController(
-      text: habitEditar?.nom ?? '',
+    // Obrim una pantalla independent per crear o editar l'hàbit.
+    final resultat = await Navigator.push<ResultatEdicioHabit>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditarHabitScreen(
+          nomInicial: habitEditar?.nom ?? '',
+          colorInicial: habitEditar?.color ?? Colors.blue.toARGB32(),
+          esNou: habitEditar == null,
+        ),
+      ),
     );
 
-    Color colorSeleccionat = habitEditar != null
-        ? Color(habitEditar.color)
-        : Colors.blue;
+    // Si l'usuari cancel·la o torna enrere, no fem cap canvi.
+    if (!mounted || resultat == null) return;
 
-    final colorsDisponibles = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-    ];
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            habitEditar == null
-                ? 'Afegir hàbit'
-                : 'Editar hàbit',
+    setState(() {
+      if (habitEditar == null) {
+        habits.add(
+          Habit(
+            id: obtenirSeguentId(),
+            nom: resultat.nom,
+            color: resultat.color,
+            datesCompletades: [],
           ),
-
-          content: StatefulBuilder(
-            builder: (context, actualitzarDialog) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: controladorNom,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom de l\'hàbit',
-                      hintText: 'Exemple: Caminar',
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  const Text('Selecciona un color:'),
-
-                  const SizedBox(height: 10),
-
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: colorsDisponibles.map((color) {
-                      final seleccionat =
-                          colorSeleccionat.toARGB32() ==
-                              color.toARGB32();
-
-                      return InkWell(
-                        onTap: () {
-                          actualitzarDialog(() {
-                            colorSeleccionat = color;
-                          });
-                        },
-                        child: CircleAvatar(
-                          backgroundColor: color,
-                          radius: 20,
-                          child: seleccionat
-                              ? const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                          )
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              );
-            },
-          ),
-
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel·lar'),
-            ),
-
-            ElevatedButton(
-              onPressed: () async {
-                // Recuperem el nom introduït
-                final nomHabit = controladorNom.text.trim();
-
-                if (nomHabit.isEmpty) {
-                  return;
-                }
-
-                if (!mounted) return;
-
-                if (habitEditar == null) {
-                  // Creem un nou hàbit
-
-                  final nouHabit = Habit(
-                    id: obtenirSeguentId(),
-                    nom: nomHabit,
-                    color: colorSeleccionat.toARGB32(),
-                    datesCompletades: [],
-                  );
-
-                  setState(() {
-                    habits.add(nouHabit);
-                  });
-                } else {
-                  // Editem l'hàbit existent
-                  // Conservem l'identificador i les dates
-
-                  setState(() {
-                    habitEditar.nom = nomHabit;
-                    habitEditar.color =
-                        colorSeleccionat.toARGB32();
-                  });
-                }
-
-                // Guardem els hàbits actualitzats
-                await preferencies.guardarHabits(habits);
-
-                // Tanquem el formulari
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
         );
-      },
-    );
+      } else {
+        // Conservem l'identificador i les dates completades.
+        habitEditar.nom = resultat.nom;
+        habitEditar.color = resultat.color;
+      }
+    });
 
-    controladorNom.dispose();
+    // Persistim els canvis amb el servei existent.
+    await preferencies.guardarHabits(habits);
   }
 
   Future<void> eliminarHabit(Habit habit) async {
@@ -417,9 +323,9 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('Restablir App'),
 
           content: const Text(
-            'Estas segur de que vols esborrar totes les dades? '
-                'Es perdera tot tipus de informacio'
-                'Aquesta acció no es pot desfer.'
+              'Estas segur de que vols esborrar totes les dades? '
+                  'Es perdera tot tipus de informacio'
+                  'Aquesta acció no es pot desfer.'
           ),
 
           actions: [
@@ -450,9 +356,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-          builder: (context) => const Benvinguda(),
+        builder: (context) => const Benvinguda(),
       ),
-        (route) => false,
+          (route) => false,
     );
   }
 
