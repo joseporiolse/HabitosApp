@@ -417,8 +417,8 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('Restablir App'),
 
           content: const Text(
-            'Estas segur de que vols esborrar totes les dades? '
-                'Es perdera tot tipus de informacio'
+            'Estàs segur de que vols esborrar totes les dades? '
+                'Es perdera tot tipus d\'informació. '
                 'Aquesta acció no es pot desfer.'
           ),
 
