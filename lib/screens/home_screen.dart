@@ -2,9 +2,23 @@ import '../main.dart';
 import 'package:flutter/material.dart';
 import '../models/habitos.dart';
 import '../services/preferencies_service.dart';
+import 'estadistiques_screen.dart';
+import 'configuracio_screen.dart';
+import '../widgets/Targeta_habit.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool temaFosc;
+  final double midaLletra;
+  final bool ocultarCompletats;
+  final Future<void> Function(bool, double, bool)? guardarAjustos;
+
+  const HomeScreen({
+    super.key,
+    this.temaFosc = false,
+    this.midaLletra = 1.0,
+    this.ocultarCompletats = false,
+    this.guardarAjustos,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -16,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String nom = '';
   int objectiu = 0; //Objectiu establert per l'usuari
   bool carregant = true;
+  bool ocultarCompletats = false;
 
   // Hàbits inicials de l'aplicació
   List<Habit> habits = [
@@ -45,20 +60,29 @@ class _HomeScreenState extends State<HomeScreen> {
     carregarDades();
   }
 
+
+
   Future<void> carregarDades() async {
-    // Carreguem el nom i els hàbits guardats
+    // Carreguem el nom, l'objectiu i els hàbits guardats
 
     try {
-      final nomGuardat = await preferencies.obtenirNom(); //Recuperem nom guardat
+      final nomGuardat = await preferencies.obtenirNom();
+      // Recuperem el nom guardat
 
-      final objectiuGuardat = await preferencies.obtenirObjectiu();
+      final objectiuGuardat =
+      await preferencies.obtenirObjectiu();
+
+      // Recuperem si volem ocultar els hàbits completats
+      final ocultarGuardat =
+      await preferencies.obtenirOcultarCompletats();
 
       final existeixen =
       await preferencies.existeixenHabitsGuardats();
 
       if (existeixen) {
         // Recuperem els hàbits, encara que la llista sigui buida
-        final habitsGuardats = await preferencies.obtenirHabits();
+        final habitsGuardats =
+        await preferencies.obtenirHabits();
 
         if (!mounted) return;
 
@@ -66,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
           nom = nomGuardat ?? '';
           objectiu = objectiuGuardat ?? 0;
           habits = habitsGuardats;
+          ocultarCompletats = ocultarGuardat;
           carregant = false;
         });
       } else {
@@ -77,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           nom = nomGuardat ?? '';
           objectiu = objectiuGuardat ?? 0;
+          ocultarCompletats = ocultarGuardat;
           carregant = false;
         });
       }
@@ -94,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
+
 
   String obtenirDataAvui() {
     // Obtenim la data actual sense l'hora
@@ -343,6 +370,44 @@ class _HomeScreenState extends State<HomeScreen> {
     await preferencies.guardarHabits(habits);
   }
 
+  Future<void> obrirConfiguracio() async {
+    // Obrim la pantalla de configuració
+
+    final temaActual = await preferencies.obtenirTemaFosc();
+    final midaActual = await preferencies.obtenirMidaLletra();
+    final ocultarActual = await preferencies.obtenirOcultarCompletats();
+
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfiguracioScreen(
+          temaFosc: temaActual,
+          midaLletra: midaActual,
+          ocultarCompletats: ocultarActual,
+          guardarAjustos: (tema, mida, ocultar) async {
+            // Guardem els ajustos de l'usuari
+
+            if (widget.guardarAjustos != null) {
+              await widget.guardarAjustos!(tema, mida, ocultar);
+            } else {
+              await preferencies.guardarTemaFosc(tema);
+              await preferencies.guardarMidaLletra(mida);
+              await preferencies.guardarOcultarCompletats(ocultar);
+            }
+
+            if (!mounted) return;
+
+            setState(() {
+              ocultarCompletats = ocultar;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> reiniciarApp() async {
 
     final confirmar = await showDialog<bool>(
@@ -397,11 +462,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final habitsCompletats = calcularHabitsCompletats();
 
+    // Filtrem els hàbits segons la configuració
+    final habitsVisibles = ocultarCompletats
+        ? habits.where((habit) => !estaCompletatAvui(habit)).toList()
+        : habits;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Els meus hàbits'),
 
         actions: [
+          // Botó per mostrar les estadístiques
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Estadístiques',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EstadistiquesScreen(
+                    habits: habits,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // Botó per obrir la configuració
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configuració',
+            onPressed: obrirConfiguracio,
+          ),
+
           // Botó per restablir l'aplicació
           IconButton(
             icon: const Icon(Icons.restart_alt),
@@ -448,52 +541,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Expanded(
             child: ListView.builder(
-              itemCount: habits.length,
-
+              itemCount: habitsVisibles.length,
               itemBuilder: (context, index) {
-                final habit = habits[index];
+                final habit = habitsVisibles[index];
 
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Color(habit.color),
-                  ),
+                return HabitTile(
+                  nom: habit.nom,
+                  completat: estaCompletatAvui(habit),
+                  color: Color(habit.color),
 
-                  title: Text(habit.nom),
+                  onChanged: (valor) {
+                    if (valor != null) {
+                      canviarEstatHabit(habit, valor);
+                    }
+                  },
 
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Botó per editar l'hàbit
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        tooltip: 'Editar hàbit',
-                        onPressed: () {
-                          mostrarFormulariHabit(
-                            habitEditar: habit,
-                          );
-                        },
-                      ),
+                  onEditar: () {
+                    mostrarFormulariHabit(habitEditar: habit);
+                  },
 
-                      // Botó per eliminar l'hàbit
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        tooltip: 'Eliminar hàbit',
-                        onPressed: () {
-                          eliminarHabit(habit);
-                        },
-                      ),
-
-                      // Casella per marcar l'hàbit
-                      Checkbox(
-                        value: estaCompletatAvui(habit),
-                        onChanged: (valor) {
-                          if (valor != null) {
-                            canviarEstatHabit(habit, valor);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                  onEliminar: () {
+                    eliminarHabit(habit);
+                  },
                 );
               },
             ),

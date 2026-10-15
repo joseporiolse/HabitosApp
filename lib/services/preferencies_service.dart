@@ -17,6 +17,21 @@ class PreferenciesService {
   static const String clauHabits = 'habits';
   // Clau per identificar la llista d'hàbits guardats
 
+  static const String clauApertures = 'apertures';
+// Clau per guardar el nombre d'obertures
+
+  static const String clauHistorialApertures = 'historial_apertures';
+// Clau per guardar les dates i hores d'obertura
+
+  static const String clauTemaFosc = 'tema_fosc';
+// Clau per guardar el tema clar o fosc
+
+  static const String clauMidaLletra = 'mida_lletra';
+// Clau per guardar la mida de la lletra i les icones
+
+  static const String clauOcultarCompletats = 'ocultar_completats';
+// Clau per guardar si ocultem els hàbits completats
+
   Future<void> guardarNom(String nom) async {
     // Funció que guarda el nom de l'usuari
 
@@ -114,5 +129,103 @@ class PreferenciesService {
 
     await prefs.clear(); //Esborrem totes les dades
 
+  }
+
+  Future<void> registrarObertura() async {
+    // Registrem una nova obertura de l'aplicació
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final aperturesActuals = prefs.getInt(clauApertures) ?? 0;
+    // Recuperem les obertures anteriors
+
+    await prefs.setInt(clauApertures, aperturesActuals + 1);
+    // Incrementem el comptador
+
+    final historial = prefs.getStringList(clauHistorialApertures) ?? [];
+    // Recuperem les dates d'obertura
+
+    historial.add(DateTime.now().toIso8601String());
+    // Afegim la data i hora actuals
+
+    await prefs.setStringList(clauHistorialApertures, historial);
+    // Guardem l'historial actualitzat
+  }
+
+  Future<int> obtenirApertures() async {
+    // Recuperem el nombre total d'obertures
+
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getInt(clauApertures) ?? 0;
+  }
+
+  Future<DateTime?> obtenirUltimaObertura() async {
+    // Recuperem la data i hora de l'última obertura
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final historial = prefs.getStringList(clauHistorialApertures) ?? [];
+
+    if (historial.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(historial.last);
+  }
+
+
+  Future<void> guardarTemaFosc(bool valor) async {
+    // Guardem si l'usuari vol utilitzar el tema fosc
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool(clauTemaFosc, valor);
+    // Guardem el valor com a bool
+  }
+
+  Future<bool> obtenirTemaFosc() async {
+    // Recuperem el tema guardat
+
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getBool(clauTemaFosc) ?? false;
+    // Si no existeix, utilitzem el tema clar
+  }
+
+  Future<void> guardarMidaLletra(double valor) async {
+    // Guardem la mida de la lletra i les icones
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setDouble(clauMidaLletra, valor);
+    // Guardem el valor com a double
+  }
+
+  Future<double> obtenirMidaLletra() async {
+    // Recuperem la mida guardada
+
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getDouble(clauMidaLletra) ?? 1.0;
+    // Si no existeix, utilitzem la mida normal
+  }
+
+  Future<void> guardarOcultarCompletats(bool valor) async {
+    // Guardem si volem ocultar els hàbits completats
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool(clauOcultarCompletats, valor);
+    // Guardem el valor com a bool
+  }
+
+  Future<bool> obtenirOcultarCompletats() async {
+    // Recuperem si volem ocultar els hàbits completats
+
+    final prefs = await SharedPreferences.getInstance();
+
+    return prefs.getBool(clauOcultarCompletats) ?? false;
+    // Per defecte, mostrem tots els hàbits
   }
 }
