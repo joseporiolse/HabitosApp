@@ -48,7 +48,7 @@ class _ConfiguracioScreenState extends State<ConfiguracioScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configuracio'),
+        title: const Text('Configuració'),
       ),
 
       body: ListView(
