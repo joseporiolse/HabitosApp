@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Resultat que la pantalla d'edició retorna a la pantalla principal.
+//Dades que retornem a la pantalla principal quan guardem un hàbit
 class ResultatEdicioHabit {
   final String nom;
   final int color;
@@ -11,7 +11,7 @@ class ResultatEdicioHabit {
   });
 }
 
-class EditarHabitScreen extends StatefulWidget {
+class EditarHabitScreen extends StatefulWidget { //Rebem el nom i el color inicials, i indiquem si estem creant un hàbit nou
   final String nomInicial;
   final int colorInicial;
   final bool esNou;
@@ -37,6 +37,7 @@ class _EditarHabitScreenState extends State<EditarHabitScreen> {
     Colors.orange,
   ];
 
+  //Carreguem el nom i el color actuals perquè es puguin modificar
   @override
   void initState() {
     super.initState();
@@ -50,7 +51,7 @@ class _EditarHabitScreenState extends State<EditarHabitScreen> {
     super.dispose();
   }
 
-  String obtenirNomColor(Color color) {
+  String obtenirNomColor(Color color) { //Convertim el color seleccionat en un nom per mostrar-lo a la pantalla
     if (color.toARGB32() == Colors.blue.toARGB32()) return 'Blau';
     if (color.toARGB32() == Colors.green.toARGB32()) return 'Verd';
     if (color.toARGB32() == Colors.orange.toARGB32()) return 'Taronja';
@@ -59,7 +60,7 @@ class _EditarHabitScreenState extends State<EditarHabitScreen> {
     return 'Personalitzat';
   }
 
-  void guardarHabit() {
+  void guardarHabit() { //Comprovem que el nom sigui vàlid i retornem les dades modificades
     final nom = controladorNom.text.trim();
     if (nom.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,7 +104,8 @@ class _EditarHabitScreenState extends State<EditarHabitScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
+
+            Row( //Mostrem els colors disponibles i marquem el que està seleccionat
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: colorsDisponibles.map((color) {
                 final seleccionat =
@@ -129,7 +131,8 @@ class _EditarHabitScreenState extends State<EditarHabitScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            Row(
+
+            Row( //Permetem cancel·lar o guardar les dades de l'hàbit
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 OutlinedButton(

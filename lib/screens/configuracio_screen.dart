@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 
+//Rebem els ajustos actuals i la funció per guardar els canvis.
 class ConfiguracioScreen extends StatefulWidget {
   final bool temaFosc;
   final double midaLletra;
@@ -20,23 +20,23 @@ class ConfiguracioScreen extends StatefulWidget {
       _ConfiguracioScreenState();
 }
 
+//Variables
+
 class _ConfiguracioScreenState extends State<ConfiguracioScreen> {
   late bool temaFosc;
   late double midaLletra;
   late bool ocultarCompletats;
 
-  @override
+  @override //Carreguem la configuracio que l'usuari té configurada
   void initState() {
     super.initState();
-
-    // Recuperem els ajustos actuals
     temaFosc = widget.temaFosc;
     midaLletra = widget.midaLletra;
     ocultarCompletats = widget.ocultarCompletats;
   }
 
   Future<void> actualitzarAjustos() async {
-    // Guardem els ajustos modificats
+    //Guardem els ajustos modificats
     await widget.guardarAjustos(
       temaFosc,
       midaLletra,
@@ -51,10 +51,10 @@ class _ConfiguracioScreenState extends State<ConfiguracioScreen> {
         title: const Text('Configuració'),
       ),
 
-      body: ListView(
+      body: ListView( //Organitzem en una llista
         padding: const EdgeInsets.all(20),
         children: [
-          // Interruptor per activar el tema fosc
+          //Activar el tema fosc
           SwitchListTile(
             title: const Text('Tema fosc'),
             subtitle: const Text('Activar el mode fosc'),
@@ -82,10 +82,11 @@ class _ConfiguracioScreenState extends State<ConfiguracioScreen> {
 
           const SizedBox(height: 10),
 
+          //Ajustem la mida de la lletra i els iconos
           Slider(
             value: midaLletra,
-            min: 0.8,
-            max: 1.5,
+            min: 0.8, //80%
+            max: 1.5, //150%
             divisions: 7,
             label: '${(midaLletra * 100).round()}%',
             onChanged: (valor) {
@@ -103,7 +104,7 @@ class _ConfiguracioScreenState extends State<ConfiguracioScreen> {
 
           const Divider(),
 
-          // Interruptor per ocultar els hàbits completats
+          //Ocultar els hàbits completats
           SwitchListTile(
             title: const Text('Ocultar hàbits completats'),
             subtitle: const Text(

@@ -1,21 +1,22 @@
+
 import 'package:flutter/material.dart';
 import 'services/preferencies_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/benvinguda_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Inicialitzem Flutter abans d'utilitzar les preferències
+Future<void> main() async { // Inicialitzem Flutter per poder accedir a les preferències abans d'obrir l'app
 
-  final preferencies = PreferenciesService();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final preferencies = PreferenciesService();  // Registrem cada vegada que s'obre l'aplicació
 
   await preferencies.registrarObertura();
-  // Registrem una obertura en iniciar l'aplicació
 
   runApp(const MyApp());
 }
 
-// Comprovem si l'usuari ja ha guardat les seves dades
+// Comprovem si l'usuari ja ha introduït el nom i un objectiu vàlid
+
 Future<bool> teDadesGuardades() async {
   final preferencies = PreferenciesService();
 
@@ -48,15 +49,14 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    // Comprovem les dades guardades només una vegada
-    dadesGuardades = teDadesGuardades();
+    // Comprovem les dades inicials una sola vegada i carreguem els ajustos
 
-    // Carreguem la configuració de l'usuari
+    dadesGuardades = teDadesGuardades();
     carregarAjustos();
   }
 
-  Future<void> carregarAjustos() async {
-    // Recuperem els ajustos guardats
+  Future<void> carregarAjustos() async { // Recuperem la configuració que l'usuari havia guardat
+
     final temaGuardat = await preferencies.obtenirTemaFosc();
     final midaGuardada = await preferencies.obtenirMidaLletra();
     final ocultarGuardat =
@@ -76,7 +76,9 @@ class _MyAppState extends State<MyApp> {
       double novaMida,
       bool nouOcultar,
       ) async {
-    // Actualitzem la configuració de l'aplicació
+
+    // Actualitzem la pantalla amb els nous ajustos
+
     if (!mounted) return;
 
     setState(() {
@@ -85,7 +87,8 @@ class _MyAppState extends State<MyApp> {
       ocultarCompletats = nouOcultar;
     });
 
-    // Guardem els ajustos amb SharedPreferences
+    // Guardem els ajustos perquè es mantinguin en tornar a obrir l'app
+
     await preferencies.guardarTemaFosc(nouTema);
     await preferencies.guardarMidaLletra(novaMida);
     await preferencies.guardarOcultarCompletats(nouOcultar);
@@ -97,15 +100,14 @@ class _MyAppState extends State<MyApp> {
       title: 'Habit App',
       debugShowCheckedModeBanner: false,
 
-      // Seleccionem el tema clar o fosc
+      // Apliquem el tema clar o fosc segons la configuració
+
       themeMode: temaFosc ? ThemeMode.dark : ThemeMode.light,
 
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
         ),
-
-        // Modifiquem la mida de les icones
         iconTheme: IconThemeData(
           size: 24 * midaLletra,
         ),
@@ -116,13 +118,13 @@ class _MyAppState extends State<MyApp> {
           seedColor: Colors.blue,
           brightness: Brightness.dark,
         ),
-
         iconTheme: IconThemeData(
           size: 24 * midaLletra,
         ),
       ),
 
-      // Modifiquem la mida dels textos
+      // Ajustem la mida dels textos de tota l'aplicació
+
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
@@ -131,6 +133,8 @@ class _MyAppState extends State<MyApp> {
           child: child!,
         );
       },
+
+      // Decidim si cal mostrar la benvinguda o entrar directament a la principal
 
       home: FutureBuilder<bool>(
         future: dadesGuardades,
