@@ -18,10 +18,12 @@ class EstadistiquesScreen extends StatefulWidget {
 class _EstadistiquesScreenState extends State<EstadistiquesScreen> {
   final PreferenciesService preferencies = PreferenciesService();
 
+  // Guardem el nombre d'obertures, l'última data i l'estat de càrrega
   int apertures = 0;
   DateTime? ultimaObertura;
   bool carregant = true;
 
+  // Carreguem les estadístiques quan s'inicia la pantalla
   @override
   void initState() {
     super.initState();
@@ -60,6 +62,7 @@ class _EstadistiquesScreenState extends State<EstadistiquesScreen> {
 
     final resultat = DateTime(any, mes, dia);
 
+    // Comprovem que la data sigui vàlida
     if (resultat.year != any ||
         resultat.month != mes ||
         resultat.day != dia) {
@@ -131,6 +134,7 @@ class _EstadistiquesScreenState extends State<EstadistiquesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Mostrem les estadístiques generals i les de cada hàbit
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estadístiques'),
@@ -186,6 +190,7 @@ class _EstadistiquesScreenState extends State<EstadistiquesScreen> {
           if (widget.habits.isEmpty)
             const Text('Encara no tens hàbits creats.'),
 
+          // Creem una targeta per cada hàbit amb la ratxa i els dies completats
           ...widget.habits.map((habit) {
             final ratxa = calcularRatxaActual(habit);
             final dies = calcularDiesCompletats(habit);

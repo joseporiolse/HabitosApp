@@ -32,6 +32,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PreferenciesService preferencies = PreferenciesService();
 
+  // Guardem les dades de l'usuari i l'estat de la pantalla
   String nom = '';
   int objectiu = 0; //Objectiu establert per l'usuari
   bool carregant = true;
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
+  // Carreguem les dades quan s'inicia la pantalla
   @override
   void initState() {
     super.initState();
@@ -123,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         carregant = false;
       });
-
+        // Si hi ha algun error, deixem de carregar i mostrem un avís
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error en carregar les dades'),
@@ -212,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || resultat == null) return;
 
     setState(() {
-      if (habitEditar == null) {
+      if (habitEditar == null) { // Si és un hàbit nou l'afegim, si no actualitzem l'existent
         habits.add(
           Habit(
             id: obtenirSeguentId(),
@@ -321,10 +323,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Restablir App'),
-
+          // Demanem confirmació abans d'esborrar totes les dades
           content: const Text(
               'Estas segur de que vols esborrar totes les dades? '
-                  'Es perdera tot tipus de informació'
+                  'Es perderà tot tipus de informació. '
                   'Aquesta acció no es pot desfer.'
           ),
 
@@ -349,10 +351,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if(confirmar != true || !mounted) return;
 
+    // Eliminem totes les dades guardades de l'aplicació
     await preferencies.esborrarTotalDades();
 
     if(!mounted) return;
 
+    // Tornem a la benvinguda i eliminem les pantalles anteriors
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -445,6 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 20),
 
+          // Mostrem els hàbits i permetem completar-los, editar-los o eliminar-los.
           Expanded(
             child: ListView.builder(
               itemCount: habitsVisibles.length,

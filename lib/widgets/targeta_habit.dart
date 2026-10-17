@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class HabitTile extends StatelessWidget {
+  // Guardem les dades de l'hàbit i les accions dels botons
   final String nom;
   final bool completat;
   final Color color;
@@ -20,6 +21,7 @@ class HabitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mostrem el color, el nom i les opcions de cada hàbit
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: color,
